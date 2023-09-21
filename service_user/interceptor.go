@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 
 	"google.golang.org/grpc"
@@ -22,6 +23,8 @@ func (auth AuthInterceptor) AuthtenticateApp() grpc.UnaryServerInterceptor {
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (resp any, err error) {
+		fmt.Println("incoming request :", info.FullMethod, info.Server)
+
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
 			return nil, errors.New("metadata required")

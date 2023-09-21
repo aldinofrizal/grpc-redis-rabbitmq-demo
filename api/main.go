@@ -39,9 +39,11 @@ func generateUserService() pb.UsersClient {
 func main() {
 	e := echo.New()
 
+	cache := NewCacheStorage(os.Getenv("REDIS_URL"))
+
 	userService := generateUserService()
 	userHandler := NewUserHandler(userService)
-	auth := NewAuthenticator(userService)
+	auth := NewAuthenticator(userService, cache)
 
 	e.POST("/users/register", userHandler.Register)
 	e.POST("/users/login", userHandler.GetToken)
