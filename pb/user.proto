@@ -16,7 +16,13 @@ message ListUser {
   repeated User list = 1;
 }
 
+message Token {
+  string token = 1;
+}
+
 service Users {
   rpc AddUser(User) returns (User) {}
   rpc GetUsers(google.protobuf.Empty) returns (ListUser) {}
+  rpc GetToken(User) returns (Token) {}
+  rpc VerifyToken(Token) returns (User) {}
 }

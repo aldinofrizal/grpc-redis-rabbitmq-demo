@@ -25,6 +25,8 @@ const _ = grpc.SupportPackageIsVersion7
 type UsersClient interface {
 	AddUser(ctx context.Context, in *User, opts ...grpc.CallOption) (*User, error)
 	GetUsers(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ListUser, error)
+	GetToken(ctx context.Context, in *User, opts ...grpc.CallOption) (*Token, error)
+	VerifyToken(ctx context.Context, in *Token, opts ...grpc.CallOption) (*User, error)
 }
 
 type usersClient struct {
@@ -53,12 +55,32 @@ func (c *usersClient) GetUsers(ctx context.Context, in *emptypb.Empty, opts ...g
 	return out, nil
 }
 
+func (c *usersClient) GetToken(ctx context.Context, in *User, opts ...grpc.CallOption) (*Token, error) {
+	out := new(Token)
+	err := c.cc.Invoke(ctx, "/pb.Users/GetToken", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *usersClient) VerifyToken(ctx context.Context, in *Token, opts ...grpc.CallOption) (*User, error) {
+	out := new(User)
+	err := c.cc.Invoke(ctx, "/pb.Users/VerifyToken", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UsersServer is the server API for Users service.
 // All implementations must embed UnimplementedUsersServer
 // for forward compatibility
 type UsersServer interface {
 	AddUser(context.Context, *User) (*User, error)
 	GetUsers(context.Context, *emptypb.Empty) (*ListUser, error)
+	GetToken(context.Context, *User) (*Token, error)
+	VerifyToken(context.Context, *Token) (*User, error)
 	mustEmbedUnimplementedUsersServer()
 }
 
@@ -71,6 +93,12 @@ func (UnimplementedUsersServer) AddUser(context.Context, *User) (*User, error) {
 }
 func (UnimplementedUsersServer) GetUsers(context.Context, *emptypb.Empty) (*ListUser, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUsers not implemented")
+}
+func (UnimplementedUsersServer) GetToken(context.Context, *User) (*Token, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetToken not implemented")
+}
+func (UnimplementedUsersServer) VerifyToken(context.Context, *Token) (*User, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method VerifyToken not implemented")
 }
 func (UnimplementedUsersServer) mustEmbedUnimplementedUsersServer() {}
 
@@ -121,6 +149,42 @@ func _Users_GetUsers_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Users_GetToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(User)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServer).GetToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.Users/GetToken",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServer).GetToken(ctx, req.(*User))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Users_VerifyToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Token)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServer).VerifyToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.Users/VerifyToken",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServer).VerifyToken(ctx, req.(*Token))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Users_ServiceDesc is the grpc.ServiceDesc for Users service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -135,6 +199,14 @@ var Users_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUsers",
 			Handler:    _Users_GetUsers_Handler,
+		},
+		{
+			MethodName: "GetToken",
+			Handler:    _Users_GetToken_Handler,
+		},
+		{
+			MethodName: "VerifyToken",
+			Handler:    _Users_VerifyToken_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

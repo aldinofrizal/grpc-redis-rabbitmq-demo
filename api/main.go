@@ -22,9 +22,11 @@ func init() {
 }
 
 func generateUserService() pb.UsersClient {
+	auth := NewUserServiceInterceptor()
 	conn, err := grpc.Dial(
 		USER_SERVICE_PORT,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(auth.EmbedAuthCredentials()),
 	)
 
 	if err != nil {
@@ -39,9 +41,11 @@ func main() {
 
 	userService := generateUserService()
 	userHandler := NewUserHandler(userService)
+	auth := NewAuthenticator(userService)
 
 	e.POST("/users/register", userHandler.Register)
-	e.GET("/users", userHandler.FindAll)
+	e.POST("/users/login", userHandler.GetToken)
+	e.GET("/users", userHandler.FindAll, auth.Authenticate)
 
 	e.Logger.Fatal(e.Start(API_PORT))
 }

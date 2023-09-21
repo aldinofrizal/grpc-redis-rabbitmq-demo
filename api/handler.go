@@ -33,7 +33,7 @@ func (handler UserHandler) Register(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, ErrorResponse{err.Error()})
 	}
 
-	return ctx.JSON(http.StatusCreated, createdUser)
+	return ctx.JSON(http.StatusCreated, UserResponse{Id: createdUser.Id, Username: createdUser.Username})
 }
 
 func (handler UserHandler) FindAll(ctx echo.Context) error {
@@ -42,5 +42,29 @@ func (handler UserHandler) FindAll(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrorResponse{err.Error()})
 	}
 
-	return ctx.JSON(http.StatusOK, users.List)
+	response := []UserResponse{}
+	for _, u := range users.List {
+		response = append(response, UserResponse{Id: u.Id, Username: u.Username})
+	}
+
+	return ctx.JSON(http.StatusOK, response)
+}
+
+func (handler UserHandler) GetToken(ctx echo.Context) error {
+	reqBody := UserRequest{}
+	if err := ctx.Bind(&reqBody); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, ErrorResponse{err.Error()})
+	}
+
+	loginUser := pb.User{
+		Username: reqBody.Username,
+		Password: reqBody.Password,
+	}
+
+	result, err := handler.Service.GetToken(context.Background(), &loginUser)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, ErrorResponse{err.Error()})
+	}
+
+	return ctx.JSON(http.StatusOK, result)
 }
