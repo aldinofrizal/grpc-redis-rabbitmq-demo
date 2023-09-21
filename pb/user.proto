@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "./pb";
+
+import "google/protobuf/Empty.proto";
+
+message User {
+  string id = 1;
+  string username = 2;
+  string password = 3;
+}
+
+message ListUser {
+  repeated User list = 1;
+}
+
+service Users {
+  rpc AddUser(User) returns (User) {}
+  rpc GetUsers(google.protobuf.Empty) returns (ListUser) {}
+}
