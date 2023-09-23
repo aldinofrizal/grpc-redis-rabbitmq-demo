@@ -16,6 +16,11 @@ var (
 	API_PORT          string
 )
 
+const (
+	USER_ADDDED_QUEUE = "h8_p3_user_added"
+	USERS_CACHE_KEY   = "h8_p3_users"
+)
+
 func init() {
 	USER_SERVICE_PORT = os.Getenv("USER_SERVICE_PORT")
 	API_PORT = os.Getenv("MAIN_API_PORT")
@@ -41,8 +46,12 @@ func main() {
 
 	cache := NewCacheStorage(os.Getenv("REDIS_URL"))
 
+	queueHandler := NewQueueHandler(cache)
+	consumer := NewQueueConsumer(os.Getenv("RABBIT_URL"))
+	consumer.AddConsumer(USER_ADDDED_QUEUE, queueHandler.UserAddedHandler)
+
 	userService := generateUserService()
-	userHandler := NewUserHandler(userService)
+	userHandler := NewUserHandler(userService, cache)
 	auth := NewAuthenticator(userService, cache)
 
 	e.POST("/users/register", userHandler.Register)

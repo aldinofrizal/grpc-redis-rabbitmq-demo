@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"example/pb"
 	"net/http"
 
@@ -11,10 +12,11 @@ import (
 
 type UserHandler struct {
 	Service pb.UsersClient
+	Cache   CacheStorage
 }
 
-func NewUserHandler(pb pb.UsersClient) UserHandler {
-	return UserHandler{Service: pb}
+func NewUserHandler(pb pb.UsersClient, c CacheStorage) UserHandler {
+	return UserHandler{Service: pb, Cache: c}
 }
 
 func (handler UserHandler) Register(ctx echo.Context) error {
@@ -37,6 +39,13 @@ func (handler UserHandler) Register(ctx echo.Context) error {
 }
 
 func (handler UserHandler) FindAll(ctx echo.Context) error {
+	val, err := handler.Cache.Get(context.Background(), USERS_CACHE_KEY)
+	if err == nil {
+		response := []UserResponse{}
+		json.Unmarshal([]byte(val), &response)
+		return ctx.JSON(http.StatusOK, response)
+	}
+
 	users, err := handler.Service.GetUsers(context.Background(), &emptypb.Empty{})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrorResponse{err.Error()})
@@ -46,6 +55,8 @@ func (handler UserHandler) FindAll(ctx echo.Context) error {
 	for _, u := range users.List {
 		response = append(response, UserResponse{Id: u.Id, Username: u.Username})
 	}
+	responseMarshall, _ := json.Marshal(response)
+	handler.Cache.Set(context.Background(), USERS_CACHE_KEY, string(responseMarshall))
 
 	return ctx.JSON(http.StatusOK, response)
 }

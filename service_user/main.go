@@ -14,6 +14,10 @@ import (
 	"google.golang.org/grpc"
 )
 
+const (
+	USER_ADDDED_QUEUE = "h8_p3_user_added"
+)
+
 var (
 	DB            *mongo.Database
 	UserRepo      UserRepository
@@ -35,12 +39,14 @@ func initiateDatabase() {
 
 func main() {
 	initiateDatabase()
+
 	Authenticator = NewAuthInterceptor()
+	publisher := NewQueuePublisher(os.Getenv("RABBIT_URL"), USER_ADDDED_QUEUE)
 
 	srv := grpc.NewServer(
 		grpc.UnaryInterceptor(Authenticator.AuthtenticateApp()),
 	)
-	userServer := NewUsersServer(UserRepo)
+	userServer := NewUsersServer(UserRepo, publisher)
 	PORT := os.Getenv("USER_SERVICE_PORT")
 
 	pb.RegisterUsersServer(srv, userServer)

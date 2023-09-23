@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"example/helpers"
-	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -55,7 +54,6 @@ func (repository UserRepository) GetUserByUsername(username string) (User, error
 	filter := bson.M{"username": username}
 	err := DB.Collection("users").FindOne(context.Background(), filter).Decode(&user)
 	if err != nil {
-		fmt.Println("<---- 2", err.Error())
 		return user, errors.New("user not found")
 	}
 

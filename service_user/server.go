@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"example/helpers"
 	"example/pb"
+	"log"
 
 	"github.com/golang-jwt/jwt/v5"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -15,24 +17,34 @@ var Users []*pb.User
 type UsersServer struct {
 	pb.UnimplementedUsersServer
 	Repository UserRepository
+	Publisher  QueuePublisher
 }
 
-func NewUsersServer(rp UserRepository) UsersServer {
-	return UsersServer{Repository: rp}
+func NewUsersServer(rp UserRepository, p QueuePublisher) UsersServer {
+	return UsersServer{Repository: rp, Publisher: p}
 }
 
 func (u UsersServer) AddUser(ctx context.Context, param *pb.User) (*pb.User, error) {
-	userPb := pb.User{}
+	userPb := &pb.User{}
 	user, err := u.Repository.CreateUser(param.Username, helpers.HashPassword(param.Password))
 	if err != nil {
-		return &userPb, errors.New("failed to create user")
+		return userPb, errors.New("failed to create user")
 	}
 
 	userPb.Id = user.ID.Hex()
 	userPb.Username = user.Username
 	userPb.Password = user.Password
 
-	return &userPb, nil
+	userStringify, err := json.Marshal(userPb)
+	if err != nil {
+		panic(err.Error())
+	}
+	err = u.Publisher.SendMessage(context.Background(), USER_ADDDED_QUEUE, userStringify)
+	if err != nil {
+		log.Printf("failed to publish user added message : %s", err.Error())
+	}
+
+	return userPb, nil
 }
 
 func (u UsersServer) GetUsers(ctx context.Context, param *emptypb.Empty) (*pb.ListUser, error) {
